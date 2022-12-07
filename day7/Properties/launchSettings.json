@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "day7": {
+      "commandName": "Project",
+      "commandLineArgs": "../../../real.txt"
+    }
+  }
+}
