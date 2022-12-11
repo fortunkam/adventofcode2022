@@ -12,7 +12,7 @@ public class Monkey
         //Line 0: Starting Items
         var matchItems = startingItemsRegex.Match(lines[0]);
         var items = matchItems.Groups["items"].Value;
-        var itemCol = items.Split(',').Select(r => long.Parse(r.Trim()));
+        var itemCol = items.Split(',').Select(r => ulong.Parse(r.Trim()));
         _items.AddRange(itemCol);
 
         //Line 1: Operation
@@ -29,6 +29,8 @@ public class Monkey
         var fM = falseMonkeyRegex.Match(lines[4]);
         FalseMonkeyIndex = int.Parse(fM.Groups["val"].Value);
 
+        Divisor = ulong.Parse(Parsers.testRegex.Match(lines[2]).Groups["val"].Value);
+
     }
 
     private Regex startingItemsRegex = new Regex(@"Starting items: (?<items>.*)$", RegexOptions.Compiled);
@@ -36,17 +38,25 @@ public class Monkey
     private Regex trueMonkeyRegex = new Regex(@"If true: throw to monkey (?<val>\d*)", RegexOptions.Compiled);
     private Regex falseMonkeyRegex = new Regex(@"If false: throw to monkey (?<val>\d*)", RegexOptions.Compiled);
     
-    private List<long> _items = new List<long>();
-    public IEnumerable<long> Items {
+    private List<ulong> _items = new List<ulong>();
+    public IEnumerable<ulong> Items {
         get
         {
             return _items.ToArray();
         }
     }
 
-    public Func<long, long> Operation {get; init;}
+    public ulong Divisor { get; init; }
 
-    public Func<long, bool> Test {get; init;}
+    public Func<ulong, ulong> Operation {get; init;}
+
+    public Func<ulong, bool> Test {get; init;}
+
+    public bool DoTest(ulong val)
+    {
+        return Test(val);
+    }
+
 
     public int TrueMonkeyIndex {get;init;}
 
@@ -59,12 +69,12 @@ public class Monkey
         return $"holding {string.Join(',',_items)}";
     }
 
-    public void AddItem(long item)
+    public void AddItem(ulong item)
     {
         _items.Add(item);
     }
 
-    public long PopItem()
+    public ulong PopItem()
     {
         var i = _items[0];
         _items.RemoveAt(0);
