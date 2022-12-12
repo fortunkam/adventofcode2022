@@ -52,7 +52,7 @@ public static class Puzzle
         char targetChar = 'a';
         if (points[current.Y][current.X] != 'S')
         {
-            targetChar = points[current.Y][current.X]++;
+            targetChar = (char)((int)(points[current.Y][current.X]) + 1);
         }
 
         var results = new List<List<Point>>();
