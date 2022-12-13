@@ -2,7 +2,7 @@
   "profiles": {
     "day12": {
       "commandName": "Project",
-      "commandLineArgs": "../../../test.txt"
+      "commandLineArgs": "../../../real.txt"
     }
   }
 }
