@@ -122,19 +122,59 @@ public static class Puzzle
         using var fs = new FileStream(inputFile, FileMode.Open);
         using var sr = new StreamReader(fs);
 
+
+        var elements = new List<Element>();
+        
+        var twoMarker = new ArrayElement();
+        var twoSub = new ArrayElement();
+        twoSub.Elements.Add(new IntElement() {  Value = 2 });
+        twoMarker.Elements.Add(twoSub);
+        elements.Add(twoMarker);
+        
+        var sixMarker = new ArrayElement();
+        var sixSub = new ArrayElement();
+        sixSub.Elements.Add(new IntElement() { Value = 6 });
+        sixMarker.Elements.Add(sixSub);
+        elements.Add(sixMarker);
+
+
+        var currentPair = 1;
+
         do
-        {  
+        {
+            var line = sr.ReadLine();
+            if (!string.IsNullOrWhiteSpace(line))
+            {
+                var element = ElementFactory.FromLine(line);
+                elements.Add(element);
+            }
         }
         while (!sr.EndOfStream);
+
+        elements.Sort();
+
+        var twoIndex = elements.IndexOf(twoMarker) + 1;
+        var sixIndex = elements.IndexOf(sixMarker) + 1;
+
+        Console.WriteLine(twoIndex * sixIndex);
+
+        
+
     }
 }
 
 
 
 
-public abstract class Element
+public abstract class Element : IComparable<Element>
 {
     public string Line { get; set; }
+
+    public int CompareTo(Element? other)
+    {
+        return Puzzle.AreEqual(this, other);
+    }
+
     public abstract string Draw(int indent = 0);
 
     public override string ToString()
