@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.RegularExpressions;
 
 public static class Puzzle
@@ -12,7 +13,7 @@ public static class Puzzle
             var line = sr.ReadLine();
             if(string.IsNullOrWhiteSpace(line)) continue;
 
-            ElementFactory.FromLine(line);
+            var element = ElementFactory.FromLine(line);
 
         }
         while (!sr.EndOfStream);
@@ -39,11 +40,26 @@ public abstract class Element
 public class IntElement : Element
 {
     public int Value {get;set;}
+
+    public override string ToString()
+    {
+        return Value.ToString();
+    }
 }
 
 public class ArrayElement : Element
 {
-    public Element[] Elements {get;set;}
+    public List<Element> Elements {get;set;}
+
+    public override string ToString()
+    {
+        var sb = new StringBuilder("ARRAY");
+        foreach(var e in Elements)
+        {
+            sb.Append($"\t{e.ToString()}");
+        }
+        return sb.ToString();
+    }
 }
 
 public static class ElementFactory
@@ -58,7 +74,56 @@ public static class ElementFactory
             Console.WriteLine($"Found Integer {line}");
             return new IntElement{ Value = int.Parse(line)};
         }
-        return new ArrayElement();
+
+        var startArray = new ArrayElement();
+        ArrayElement currentArray = null;
+        var arrays = new Queue<ArrayElement>();
+        var numbers = new List<IntElement>();
+
+        var buffer = new List<char>();
+        foreach(var i in line)
+        {
+            switch(i)
+            {
+                case ']':
+                    var curr = arrays.Dequeue();
+                    if(buffer.Count > 0)
+                    {
+                        var number = int.Parse(new String(buffer.ToArray()));
+                        numbers.Add(new IntElement { Value = number});
+                        curr.Elements.AddRange(numbers);
+                        buffer.Clear();
+                    }
+                    numbers.Clear();
+                    break;
+                case ',':
+                    if(buffer.Count > 0)
+                    {
+                        var numberComma = int.Parse(new String(buffer.ToArray()));
+                        numbers.Add(new IntElement { Value = numberComma});
+                        buffer.Clear();
+                    }
+                    break;
+                case '[':
+                    if(currentArray == null)
+                    {
+                        currentArray = startArray;
+                    }
+                    else
+                    {
+                        var newArray = new ArrayElement();
+                        currentArray.Elements.Add(newArray);
+                        currentArray = newArray;
+                    }
+                    arrays.Enqueue(currentArray);
+                break;
+                default:
+                    buffer.Insert(0,i);
+                    break;
+            }
+        }
+
+        return startArray;
     }
 
 
