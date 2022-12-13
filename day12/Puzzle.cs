@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Text.RegularExpressions;
 using System.Drawing;
 using System.ComponentModel.DataAnnotations;
+using System.Transactions;
 
 public class Cell
 {
@@ -31,6 +32,10 @@ public class Cell
     {
         get { return _cells.ToArray(); }
     }
+
+    public bool Visited { get; set; }
+
+    public Cell Previous { get; set; }
 }
 
 
@@ -69,12 +74,12 @@ public static class Puzzle
                 if (points[y][x] == 'S')
                 {
                     map[x, y] = new Cell(x, y, 'a');
-                    start = map[x, y];
+                    end = map[x, y];
                 }
                 else if (points[y][x] == 'E')
                 {
                     map[x, y] = new Cell(x, y, 'z');
-                    end = map[x, y];
+                    start = map[x, y];
                 }
                 else
                 {
@@ -88,175 +93,174 @@ public static class Puzzle
             for (int x = 0; x < xSize; x++)
             {
                 var currentChar = map[x, y].Value;
-                if (y > 0 && map[x, y - 1].Value - currentChar <= 1)
+                if (y > 0 && currentChar - map[x, y - 1].Value <= 1)
                 {
                     map[x, y].AddNeighbour(map[x, y - 1]);
                 }
 
-                if (y + 1 < ySize && map[x, y + 1].Value - currentChar <= 1)
+                if (y + 1 < ySize && currentChar - map[x, y + 1].Value <= 1 )
                 {
                     map[x, y].AddNeighbour(map[x, y + 1]);
                 }
                 
-                if (x > 0 && map[x - 1, y].Value - currentChar <= 1)
+                if (x > 0 && currentChar - map[x - 1, y].Value <= 1)
                 {
                     map[x, y].AddNeighbour(map[x - 1,y]);
                 }
 
-                if (x + 1 < xSize && map[x + 1, y].Value - currentChar <= 1)
+                if (x + 1 < xSize && currentChar - map[x + 1, y].Value <= 1)
                 {
                     map[x, y].AddNeighbour(map[x + 1, y]);
                 }
             }
         }
 
-        //var result = GetShortestRoute(start, new List<Point>());
+        Queue<Cell> queue = new Queue<Cell>();
+        start.Visited = true;
+        queue.Enqueue(start);
 
-        //foreach(var r in result)
-        //{
-        //    Console.WriteLine(r);
-        //}
-
-        var result = GetRoute(start, new List<Cell>()
+        while(queue.Count > 0)
         {
-            start
-        });
+            var current = queue.Dequeue();
+            GetRoute(current, queue);
+        }
 
-        Console.WriteLine(result.Count - 1);
+        Console.WriteLine(CalculateDistance());
     }
 
-    public static List<Cell> GetRoute(Cell current, List<Cell> route)
+    public static int CalculateDistance()
     {
-        if (current.X == end.X && current.Y == end.Y)
+        var current = end;
+        var count = 0;
+        
+        while(current != start)
         {
-            return route;
+            if (!current.Visited || current.Previous == null)
+                return int.MaxValue;
+            current = current.Previous;
+            count++;
         }
 
-        var neighbours = current.Neighbours;
-        var shortestRoute = new List<Cell>();
-        foreach (var neighbour in neighbours)
-        {
-            if (route.Contains(neighbour))
-            {
-                continue;
-            }
-
-            var newRoute = new List<Cell>(route)
-            {
-                neighbour
-            };
-            var newShortestRoute = GetRoute(neighbour, newRoute);
-           // Console.WriteLine(newShortestRoute.Count);
-            if(shortestRoute.Count == 0)
-            {
-                shortestRoute = newShortestRoute;
-            }
-            else if (newShortestRoute.Count != 0 && newShortestRoute.Count < shortestRoute.Count)
-            {
-                shortestRoute = newShortestRoute;
-            }
-        }
-
-        return shortestRoute;
+        return count;
     }
 
-    //private static Dictionary<string, List<Point>> _history = new Dictionary<string, List<Point>>();
+    public static int CalculateDistanceToEnd(Cell testEnd)
+    {
+        var current = testEnd;
+        var count = 0;
 
-    //private static List<Point> GetShortestRoute(Point current, List<Point> history)
-    //{
+        while (current != start)
+        {
+            if (!current.Visited || current.Previous == null)
+                return int.MaxValue;
+            current = current.Previous;
+            count++;
+        }
 
-    //   // Console.WriteLine($"Scanning {current} contains value {points[current.Y][current.X]}");
+        return count;
+    }
 
-    //    var cacheKey = $"{current.X},{current.Y}";
-    //    if (history.Any(x => x.X == current.X && x.Y == current.Y))
-    //    {
-    //        return null;
-    //    }
+    public static void GetRoute(Cell current, Queue<Cell> queue)
+    {
+        foreach (var neighbour in current.Neighbours)
+        {
+            if (!neighbour.Visited)
+            {
+                neighbour.Visited = true;
+                neighbour.Previous = current;
+                queue.Enqueue(neighbour);
+            }
+        }
+    }
 
-    //    if (points[current.Y][current.X] == 'E')
-    //    {
-    //        return history;
-    //    }
-
-    //    char targetChar = 'a';
-    //    if (points[current.Y][current.X] != 'S')
-    //    {
-    //        if (points[current.Y][current.X] == 'z')
-    //        {
-    //            targetChar = 'E';
-    //        }
-    //        else
-    //        {
-    //            targetChar = (char)((int)(points[current.Y][current.X]) + 1);
-    //        }
-    //    }
-
-    //    var results = new List<List<Point>>();
-
-    //    var newHistory = new List<Point>(history)
-    //    {
-    //        current
-    //    };
-
-    //    if (current.Y > 0 
-    //        && (points[current.Y - 1][current.X] == targetChar || points[current.Y - 1][current.X] == points[current.Y][current.X])
-    //        && !history.Any(r=>r.X == current.X && r.Y == current.Y -1))
-    //    {
-
-    //        var r = GetShortestRoute(new Point(current.X, current.Y - 1), newHistory);
-    //        if(r.Count > 0)
-    //        {
-    //            results.Add(r);
-    //        }
-            
-    //    }
-
-    //    if (current.Y < points.Count - 1 
-    //        && (points[current.Y + 1][current.X] == targetChar || points[current.Y + 1][current.X] == points[current.Y][current.X])
-    //        && !history.Any(r => r.X == current.X && r.Y == current.Y + 1))
-    //    {
-    //        var r = GetShortestRoute(new Point(current.X, current.Y + 1), newHistory);
-    //        if (r?.Count > 0)
-    //        {
-    //            results.Add(r);
-    //        }
-    //    }
-
-    //    if (current.X > 0 
-    //        && (points[current.Y][current.X- 1] == targetChar || points[current.Y][current.X - 1] == points[current.Y][current.X])
-    //        && !history.Any(r => r.X == current.X - 1 && r.Y == current.Y))
-    //    {
-    //        var r = GetShortestRoute(new Point(current.X - 1, current.Y), newHistory);
-    //        if (r?.Count > 0)
-    //        {
-    //            results.Add(r);
-    //        }
-    //    }
-
-    //    if (current.X < points[0].Count - 1 
-    //        && (points[current.Y][current.X+ 1] == targetChar || points[current.Y][current.X + 1] == points[current.Y][current.X])
-    //        && !history.Any(r => r.X == current.X + 1 && r.Y == current.Y))
-    //    {
-    //        var r = GetShortestRoute(new Point(current.X+ 1, current.Y), newHistory);
-    //        if (r?.Count > 0)
-    //        {
-    //            results.Add(r);
-    //        }
-    //    }
-
-    //    var resultEnd = results.Count == 0 ? new List<Point>()
-    //        : results.Where(r => r.Count > 0).OrderBy(r => r.Count).FirstOrDefault() ?? new List<Point>();
-
-    //   // _history.Add(cacheKey, resultEnd);
-
-
-    //    return resultEnd;
-    //}
-    
     public static void PartTwo(string inputFile) 
     {
-            
+        using var fs = new FileStream(inputFile, FileMode.Open);
+        using var sr = new StreamReader(fs);
+
+        do
+        {
+            var line = sr.ReadLine();
+            var pointLine = line.ToCharArray().ToList();
+            points.Add(pointLine);
+        }
+        while (!sr.EndOfStream);
+
+
+        int xSize = points[0].Count;
+        int ySize = points.Count;
+
+        var alternateEndPoints = new List<Cell>();
         
+        map = new Cell[xSize, ySize];
+        for (int y = 0; y < ySize; y++)
+        {
+            for (int x = 0; x < xSize; x++)
+            {
+                if (points[y][x] == 'S')
+                {
+                    map[x, y] = new Cell(x, y, 'a');
+                    end = map[x, y];
+                }
+                else if (points[y][x] == 'E')
+                {
+                    map[x, y] = new Cell(x, y, 'z');
+                    start = map[x, y];
+                }
+                else
+                {
+                    map[x, y] = new Cell(x, y, points[y][x]);
+                    if (points[y][x] == 'a')
+                    {
+                        alternateEndPoints.Add(map[x, y]);
+                    }
+                }
+            }
+        }
+
+        for (int y = 0; y < ySize; y++)
+        {
+            for (int x = 0; x < xSize; x++)
+            {
+                var currentChar = map[x, y].Value;
+                if (y > 0 && currentChar - map[x, y - 1].Value <= 1)
+                {
+                    map[x, y].AddNeighbour(map[x, y - 1]);
+                }
+
+                if (y + 1 < ySize && currentChar - map[x, y + 1].Value <= 1)
+                {
+                    map[x, y].AddNeighbour(map[x, y + 1]);
+                }
+
+                if (x > 0 && currentChar - map[x - 1, y].Value <= 1)
+                {
+                    map[x, y].AddNeighbour(map[x - 1, y]);
+                }
+
+                if (x + 1 < xSize && currentChar - map[x + 1, y].Value <= 1)
+                {
+                    map[x, y].AddNeighbour(map[x + 1, y]);
+                }
+            }
+        }
+
+        Queue<Cell> queue = new Queue<Cell>();
+        start.Visited = true;
+        queue.Enqueue(start);
+
+        while (queue.Count > 0)
+        {
+            var current = queue.Dequeue();
+            GetRoute(current, queue);
+        }
+        
+
+        Console.WriteLine(alternateEndPoints.Min(r => CalculateDistanceToEnd(r)));
+        
+
+        
+
     }
 
 }
