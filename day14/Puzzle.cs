@@ -1,15 +1,18 @@
+using System.Drawing;
 using System.Text.RegularExpressions;
 
 public abstract class Element
 {
-    public Element(int x, int y, string display)
+    public Element(int x, int y, string display, ConsoleColor color)
     {
         X= x; Y=y; 
-        Display= display; 
+        Display= display;
+        Color = color;
     }
     public int X; public int Y;
 
     public string Display;
+    public ConsoleColor Color;
 
     public override string ToString()
     {
@@ -19,13 +22,14 @@ public abstract class Element
 
 public class Rock : Element
 {
-    public Rock(int x, int y): base(x, y, "#") { }
+    public Rock(int x, int y): base(x, y, "#", ConsoleColor.Magenta) { }
 }
 
 public class Sand : Element
 {
-    public Sand(int x, int y) : base(x, y, "o") { }
+    public Sand(int x, int y) : base(x, y, "o", ConsoleColor.Yellow) { }
 }
+
 
 
 
@@ -75,51 +79,118 @@ public static class Puzzle
         }
         while (!sr.EndOfStream);
 
-        DrawPoints(rockPoints);
+        int xOffset;
+        int yOffset;
+        var map = BuildMap(rockPoints, out xOffset, out yOffset);
+        DrawPoints(map);
 
-       
+        var startPointX = 500;
+        var turnCount = 0;
+        while(true)
+        {
+
+            var result = EvaluateColumn(map, startPointX - xOffset, 0 - yOffset, out bool hitBottom);
+            if (hitBottom)
+            {
+                Console.WriteLine("hit bottom");
+                break;
+            }
+            turnCount++;
+            if (turnCount == 4) break;
+        }
+
+        DrawPoints(map);
+
     }
 
-    //public static Element[,] BuildMap(List<Element> rocks)
-    //{
-        
-    //}
+    public static bool EvaluateColumn(Element[,] map, int startX, int startY, out bool hitBottom)
+    {
+        for (int y = startY; y < map.GetLength(1); y++)
+        {
+            if (y >= map.GetLength(1) - 1)
+            {
+                //At bottom, signal end
+                hitBottom = true;
+                break;
 
-    public static void DrawPoints(List<Element> rocks)
+            }
+            var currentX = startX;
+            var element = map[currentX, y + 1];
+            if (map[currentX, y + 1] != null)
+            {
+                if (element is Rock)
+                {
+                    map[currentX, y] = new Sand(currentX, y);
+                    hitBottom = false;
+                    return true;
+                }
+
+                if (element is Sand)
+                {
+ 
+                    var leftResult = EvaluateColumn(map, startX - 1, y + 1, out hitBottom);
+                    if (leftResult) return true;
+
+                    var rightResult = EvaluateColumn(map, startX + 1, y + 1, out hitBottom);
+                    if (rightResult) return true;
+
+                }
+
+            }
+        }
+        hitBottom = false;
+        return false;
+    }
+
+    public static Element[,] BuildMap(List<Element> rocks, out int xOffset, out int yOffset)
     {
         var minX = rocks.Min(r => r.X);
         var maxX = rocks.Max(r => r.X);
+        var countX = maxX - minX + 1;
         var minY = rocks.Min(r => r.Y);
-        var maxY = rocks.Max(r => r.Y);
-
         if (minY > 0)
         {
             minY = 0;
         }
+        var maxY = rocks.Max(r => r.Y);
+        var countY = maxY - minY + 1;
 
-        if(minX > 500)
+        yOffset = minY;
+        xOffset = minX;
+
+        var map = new Element[countX, countY];
+
+        foreach(var rock in rocks)
         {
-            minX = 500;
+            map[rock.X - minX, rock.Y - minY] = rock;
         }
 
-        if(maxX < 500) { maxX = 500; }
+        return map;
 
-        for (int y = minY; y <= maxY; y++)
+    }
+
+    public static void DrawPoints(Element[,] elements)
+    {
+        for (int y = 0; y < elements.GetLength(1); y++)
         {
-            for (int x = minX; x <= maxX; x++)
+            for (int x = 0; x < elements.GetLength(0); x++)
             {
-                var rock = rocks.FirstOrDefault(r => r.X == x && r.Y == y);
-                if (rock != null)
+                var e = elements[x,y];
+                if (e != null)
                 {
-                    Console.Write(rock.Display);
+                    Console.ForegroundColor = e.Color;
+                    Console.Write(e.Display);
                 }
                 else
                 {
+                    Console.ForegroundColor = ConsoleColor.DarkGray;
                     Console.Write(".");
                 }
             }
             Console.WriteLine();
         }
+
+        Console.ResetColor();
     }
     
     public static void PartTwo(string inputFile)
