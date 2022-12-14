@@ -96,15 +96,18 @@ public static class Puzzle
                 break;
             }
             turnCount++;
-            if (turnCount == 4) break;
+            DrawPoints(map);
+           // if (turnCount == 24) break;
+
         }
 
-        DrawPoints(map);
+        
 
     }
 
     public static bool EvaluateColumn(Element[,] map, int startX, int startY, out bool hitBottom)
     {
+        hitBottom = false;
         for (int y = startY; y < map.GetLength(1); y++)
         {
             if (y >= map.GetLength(1) - 1)
@@ -127,18 +130,39 @@ public static class Puzzle
 
                 if (element is Sand)
                 {
- 
-                    var leftResult = EvaluateColumn(map, startX - 1, y + 1, out hitBottom);
-                    if (leftResult) return true;
+                    var left = map[currentX - 1, y + 1];
+                    var right = map[currentX + 1, y + 1];
+                    
+                    if(right != null && left == null)
+                    {
+                        map[currentX - 1, y + 1] = new Sand(currentX - 1, y + 1);
+                        hitBottom = false;
+                        return true;
+                    }
 
-                    var rightResult = EvaluateColumn(map, startX + 1, y + 1, out hitBottom);
-                    if (rightResult) return true;
+                    if (left != null && right == null)
+                    {
+                        map[currentX + 1, y + 1] = new Sand(currentX + 1, y + 1);
+                        hitBottom = false;
+                        return true;
+                    }
 
+                    if (left != null && right != null)
+                    {
+                        map[currentX, y] = new Sand(currentX, y);
+                        hitBottom = false;
+                        return true;
+                    }
+
+                    if(right == null && left == null)
+                    {   
+                        return EvaluateColumn(map, currentX - 1, y, out hitBottom);
+                    }
                 }
 
             }
         }
-        hitBottom = false;
+        
         return false;
     }
 
