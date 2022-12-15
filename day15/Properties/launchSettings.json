@@ -1,6 +1,6 @@
 {
   "profiles": {
-    "day13": {
+    "day15": {
       "commandName": "Project",
       "commandLineArgs": "../../../real.txt"
     }
