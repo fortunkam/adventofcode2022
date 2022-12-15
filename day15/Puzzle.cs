@@ -44,6 +44,9 @@ public class Sensor : Element
 
         var itemCount = 1;
 
+        RangeMinX = this.X - distance;
+        RangeMaxX = this.X + distance;
+
         for (var y = this.Y - distance; y <= this.Y + distance; y++)
         {
             if (y == _targetRow)
@@ -55,7 +58,7 @@ public class Sensor : Element
                     _noBeacons.Add(new Empty(this.X + i, y));
                 }
             }
-            if (y > this.Y)
+            if (y >= this.Y)
             {
                 itemCount--;
             }
@@ -91,21 +94,9 @@ public class Sensor : Element
         }
     }
 
-    public int RangeMinX
-    {
-        get
-        {
-            return _noBeacons.Count > 0 ? _noBeacons.Min(r => r.X) : int.MaxValue;
-        }
-    }
+    public int RangeMinX { get; private set; }
 
-    public int RangeMaxX
-    {
-        get
-        {
-            return _noBeacons.Count > 0 ? _noBeacons.Max(r => r.X): int.MinValue;
-        }
-    }
+    public int RangeMaxX { get; private set; }
 }
 
 public class Empty : Element
@@ -144,32 +135,44 @@ public static class Puzzle
     
     public static void PartOne(string inputFile)
     {
-        var targetRow = 10;
+        var targetRow = 2000000;
         var sensors = Puzzle.GetSensors(inputFile, targetRow);
 
         var minX = sensors.Min(r => r.RangeMinX);
         var maxX = sensors.Max(r => r.RangeMaxX);
 
-        
+
 
         var emptyYPoints = new Dictionary<int, int>(Enumerable.Range(minX, maxX - minX + 1).Select(r => new KeyValuePair<int, int>(r, 0)));
-        foreach(var sensor in sensors)
+        foreach (var sensor in sensors)
         {
             var noHits = sensor.NoBeacons.Where(r => r.Y == targetRow).Select(r => r.X);
-            foreach(var n in noHits)
+            foreach (var n in noHits)
             {
                 emptyYPoints[n]++;
             }
         }
 
+        foreach (var sensor in sensors)
+        {
+            if (sensor.ClosestBeacon.Y == targetRow)
+            {
+                emptyYPoints[sensor.ClosestBeacon.X] = 0;
+            }
 
+            if (sensor.Y == targetRow)
+            {
+                emptyYPoints[sensor.X] = 0;
+            }
+        }
 
+        //foreach(var i in emptyYPoints.OrderBy(r=>r.Key))
+        //{
+        //    Console.WriteLine($"{i.Key} => {i.Value}");
+        //}
 
-
-
-
-        //var testSensor = Sensor.FromLine("Sensor at x=8, y=7: closest beacon is at x=2, y=10");
-        Console.WriteLine(emptyYPoints.Where(r=>r.Value != 0).Count());
+        //var testSensor = Sensor.FromLine("Sensor at x=8, y=7: closest beacon is at x=2, y=10",targetRow);
+       Console.WriteLine(emptyYPoints.Where(r=>r.Value > 0).Count());
 
     }
 
